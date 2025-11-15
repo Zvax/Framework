@@ -2,6 +2,9 @@
 
 namespace Zvax\Framework;
 
+/**
+ * @template T
+ */
 readonly class Result
 {
     /**
@@ -9,11 +12,23 @@ readonly class Result
      */
     private function __construct(
         public bool $isSuccess,
-        public mixed $value,
+        private mixed $value,
         public array $errors,
     ) {}
 
-    public static function success(mixed $value): self
+    /**
+     * @return T
+     */
+    public function unwrap()
+    {
+        return $this->value;
+    }
+
+    /**
+     * @param T $value
+     * @return self<T>
+     */
+    public static function success($value): self
     {
         return new self(true, $value, []);
     }
