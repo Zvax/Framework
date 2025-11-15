@@ -31,8 +31,7 @@ readonly class Storage
          * We have a foreign key, so let's assume the result is success actually
          */
 
-        /** @var UserEntity $user */
-        $user = $userResult->value;
+        $user = $userResult->unwrap();
 
         $session = new Entity(
             $row['id'],

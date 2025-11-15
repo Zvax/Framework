@@ -23,6 +23,9 @@ readonly class Storage
         return Result::success($this->fromRow($getUserRow->fetch()));
     }
 
+    /**
+     * @return Result<Entity>
+     */
     public function fromIdentifier(string $identifier): Result
     {
         $getUserRow = $this->pdo->prepare('select * from user where identifier=:identifier');

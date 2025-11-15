@@ -10,6 +10,9 @@
             "email": "fractalesque@gmail.com"
         }
     ],
+    "scripts": {
+        "test": "php -dmemory_limit=-1 vendor/bin/phpunit"
+    },
     "autoload": {
         "psr-4": {
             "Zvax\\Framework\\": "src/"
@@ -28,8 +31,8 @@
         "rdlowrey/auryn": "dev-master"
     },
     "require-dev": {
-        "roave/security-advisories": "dev-latest",
-        "phpunit/phpunit": "^11.4"
+        "phpunit/phpunit": "^11.5",
+        "roave/security-advisories": "dev-latest"
     },
     "config": {
         "sort-packages": true

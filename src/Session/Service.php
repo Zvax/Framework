@@ -4,7 +4,6 @@ namespace Zvax\Framework\Session;
 
 use PDO;
 use Zvax\Framework\Result;
-use Zvax\Framework\Session\User\Entity as UserEntity;
 use Zvax\Framework\Session\User\Storage as UserStorage;
 
 readonly class Service
@@ -23,11 +22,10 @@ readonly class Service
         $userResult = $this->userStorage->fromIdentifier($identifier);
 
         if (!$userResult->isSuccess) {
-            return Result::failure('Identification failure');
+            return Result::failure('Identification failure', ...$userResult->errors);
         }
 
-        /** @var UserEntity $user */
-        $user = $userResult->value;
+        $user = $userResult->unwrap();
 
         if (!password_verify($password, $user->password)) {
             return Result::failure('Identification failure');
