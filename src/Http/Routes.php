@@ -38,9 +38,9 @@ class Routes
         $this->urlBuilder = $urlBuilder ?? new UrlBuilder();
     }
 
-    public function buildUrl(string $name, array $arguments = []): string
+    public function buildUrl(string $name, array $arguments = [], $queryParams = []): string
     {
-        return $this->urlBuilder->build($name, $arguments);
+        return $this->urlBuilder->build($name, $arguments, $queryParams);
     }
 
     public function addRequestMiddlewareGroup(callable $definitions, RequestMiddleware|string ...$requestMiddlewares): self
