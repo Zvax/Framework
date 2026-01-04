@@ -100,27 +100,4 @@ class StorageTest extends TestCase
         $this->assertInstanceOf(\DateTimeImmutable::class, $session->created);
         $this->assertInstanceOf(\DateTimeImmutable::class, $session->expires);
     }
-
-    public function testBumpExpiration(): void
-    {
-        $user = $this->createMock(UserEntity::class);
-        $created = new \DateTimeImmutable('2025-01-01 10:00:00');
-        $oldExpires = new \DateTimeImmutable('2025-01-01 11:00:00');
-        $session = new Entity('sess-id', $user, $created, $oldExpires);
-
-        $statement = $this->createMock(PDOStatement::class);
-        $statement->expects($this->once())
-            ->method('execute')
-            ->with($this->callback(function (array $params) {
-                return $params[':id'] === 'sess-id' && isset($params[':expires']);
-            }));
-
-        $this->pdo->method('prepare')->willReturn($statement);
-
-        $updatedSession = $this->storage->bumpExpiration($session);
-
-        $this->assertSame('sess-id', $updatedSession->id);
-        $this->assertGreaterThan($oldExpires, $updatedSession->expires);
-        $this->assertSame($created, $updatedSession->created);
-    }
 }

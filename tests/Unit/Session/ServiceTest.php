@@ -2,8 +2,6 @@
 
 namespace Zvax\Framework\Tests\Unit\Session;
 
-use PDO;
-use PDOStatement;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -19,7 +17,6 @@ class ServiceTest extends TestCase
 {
     protected SessionStorage&MockObject $sessionStorage;
     protected UserStorage&MockObject $userStorage;
-    protected PDO&MockObject $pdo;
 
     protected Service $service;
 
@@ -27,9 +24,8 @@ class ServiceTest extends TestCase
     {
         $this->sessionStorage = $this->createMock(SessionStorage::class);
         $this->userStorage    = $this->createMock(UserStorage::class);
-        $this->pdo            = $this->createMock(PDO::class);
 
-        $this->service = new Service($this->sessionStorage, $this->userStorage, $this->pdo);
+        $this->service = new Service($this->sessionStorage, $this->userStorage);
     }
 
     public function testUnknownUser(): void
@@ -93,25 +89,13 @@ class ServiceTest extends TestCase
 
     public function testCloseSession(): void
     {
-        $updateExpirationStatement = $this->createMock(PDOStatement::class);
-        $updateExpirationStatement
+        $this->sessionStorage
             ->expects($this->once())
-            ->method('execute')
-            ->with($this->callback(function (array $data) {
-                $expires = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $data[':expires']);
-
-                $this->assertSame('sessionId', $data[':id']);
-                $this->assertSame($expires->format('Y-m-d H:i:s'), $data[':expires']);
-
-                return true;
-            }))
-        ;
-
-        $this->pdo
-            ->expects($this->once())
-            ->method('prepare')
-            ->with('update session set expires=:expires where id=:id')
-            ->willReturn($updateExpirationStatement)
+            ->method('setExpiration')
+            ->with(
+                $this->callback(fn (SessionEntity $session) => $session->id === 'sessionId'),
+                $this->isInstanceOf(\DateTimeImmutable::class),
+            )
         ;
 
         $created = new \DateTimeImmutable('2025-01-01 00:00:00');
@@ -123,5 +107,28 @@ class ServiceTest extends TestCase
             $created,
             $expires,
         ));
+    }
+
+    public function testBumpExpiration(): void
+    {
+        $user       = $this->createMock(UserEntity::class);
+        $created    = new \DateTimeImmutable('2025-01-01 10:00:00');
+        $oldExpires = new \DateTimeImmutable('2025-01-01 11:00:00');
+        $session    = new SessionEntity('sess-id', $user, $created, $oldExpires);
+
+        $this->sessionStorage
+            ->expects($this->once())
+            ->method('setExpiration')
+            ->with(
+                $this->callback(fn (SessionEntity $session) => $session->id === 'sess-id'),
+                $this->isInstanceOf(\DateTimeImmutable::class),
+            )
+        ;
+
+        $updatedSession = $this->service->bump($session);
+
+        $this->assertSame('sess-id', $updatedSession->id);
+        $this->assertGreaterThan($oldExpires, $updatedSession->expires);
+        $this->assertSame($created, $updatedSession->created);
     }
 }

@@ -16,7 +16,7 @@ readonly class Storage
 
     public function findById(string $sessionId): Result
     {
-        $getSessionRow =  $this->pdo->prepare('select * from session where id = :sessionId');
+        $getSessionRow =  $this->pdo->prepare('select * from zvax_sessions where id = :sessionId');
         $getSessionRow->execute([':sessionId' => $sessionId]);
 
         if ($getSessionRow->rowCount() === 0) {
@@ -46,7 +46,7 @@ readonly class Storage
     public function persistNewSession(string $sessionId, UserEntity $user): Entity
     {
         $insertSession = $this->pdo->prepare('
-            insert into session(id, user_id, created, expires)
+            insert into zvax_sessions(id, user_id, created, expires)
             values (:id, :user_id, :created, :expires)
         ');
 
@@ -68,25 +68,13 @@ readonly class Storage
         );
     }
 
-    public function bumpExpiration(Entity $session): Entity
+    public function setExpiration(Entity $session, \DateTimeImmutable $expires): void
     {
-        $updateExpires = $this->pdo->prepare('
-            update session set expires = :expires where id = :id
-        ');
+        $setExpiration = $this->pdo->prepare('update zvax_sessions set expires = :expires where id = :id');
 
-        $now =  new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-        $expires = $now->add(new \DateInterval('PT2H'));
-
-        $updateExpires->execute([
+        $setExpiration->execute([
             ':id' => $session->id,
             ':expires' => $expires->format('Y-m-d H:i:s'),
         ]);
-
-        return new Entity(
-            $session->id,
-            $session->user,
-            $session->created,
-            $expires,
-        );
     }
 }

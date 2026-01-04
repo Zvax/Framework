@@ -11,7 +11,6 @@ readonly class Service
     public function __construct(
         private Storage     $sessionStorage,
         private UserStorage $userStorage,
-        private PDO         $pdo,
     ) {}
 
     /**
@@ -36,13 +35,40 @@ readonly class Service
         return Result::success($session);
     }
 
+    /**
+     * @return Result<Entity>
+     */
+    public function validate(string $sessionId): Result
+    {
+        $existingSession = $this->sessionStorage->findById($sessionId);
+
+        if (!$existingSession->isSuccess) {
+            return $existingSession;
+        }
+
+        return Result::success($existingSession->unwrap());
+    }
+
+    public function bump(Entity $session, string $timeInterval = 'PT2H'): Entity
+    {
+        $now     = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $expires = $now->add(new \DateInterval($timeInterval));
+
+        $this->sessionStorage->setExpiration($session, $expires);
+
+        return new Entity(
+            $session->id,
+            $session->user,
+            $session->created,
+            $expires,
+        );
+    }
+
     public function closeSession(Entity $session): void
     {
-        $updateExpiration = $this->pdo->prepare('update session set expires=:expires where id=:id');
-        $updateExpiration->execute([
-            ':id' => $session->id,
-            ':expires' => new \DateTimeImmutable('UTC')->format('Y-m-d H:i:s'),
-        ]);
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+
+        $this->sessionStorage->setExpiration($session, $now);
     }
 
     private function generateSessionId(): string

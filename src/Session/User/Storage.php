@@ -13,7 +13,7 @@ readonly class Storage
 
     public function fromId(int $id): Result
     {
-        $getUserRow = $this->pdo->prepare('select * from user where id=:id');
+        $getUserRow = $this->pdo->prepare('select * from zvax_users where id=:id');
         $getUserRow->execute([':id' => $id]);
 
         if ($getUserRow->rowCount() === 0) {
@@ -28,7 +28,7 @@ readonly class Storage
      */
     public function fromIdentifier(string $identifier): Result
     {
-        $getUserRow = $this->pdo->prepare('select * from user where identifier=:identifier');
+        $getUserRow = $this->pdo->prepare('select * from zvax_users where identifier=:identifier');
         $getUserRow->execute([':identifier' => $identifier]);
 
         if ($getUserRow->rowCount() === 0) {
