@@ -2,7 +2,6 @@
 
 namespace Zvax\Framework\Session;
 
-use PDO;
 use Zvax\Framework\Result;
 use Zvax\Framework\Session\User\Storage as UserStorage;
 
@@ -35,18 +34,17 @@ readonly class Service
         return Result::success($session);
     }
 
-    /**
-     * @return Result<Entity>
-     */
     public function validate(string $sessionId): Result
     {
-        $existingSession = $this->sessionStorage->findById($sessionId);
+        $sessionResult = $this->sessionStorage->findById($sessionId);
 
-        if (!$existingSession->isSuccess) {
-            return $existingSession;
+        if (!$sessionResult->isSuccess) {
+            return $sessionResult;
         }
 
-        return Result::success($existingSession->unwrap());
+        $this->bump($sessionResult->unwrap());
+
+        return $sessionResult;
     }
 
     public function bump(Entity $session, string $timeInterval = 'PT2H'): Entity

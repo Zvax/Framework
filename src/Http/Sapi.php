@@ -2,9 +2,18 @@
 
 namespace Zvax\Framework\Http;
 
+use Zvax\Framework\Http\Sapi\Service;
+
 class Sapi
 {
-    public static function emit(Response $response): void
+    private Service $cookieService;
+
+    public function __construct(?Service $cookieService = null)
+    {
+        $this->cookieService = $cookieService ?? new Service();
+    }
+
+    public function emit(Response $response): void
     {
         http_response_code($response->statusCode);
 
@@ -12,18 +21,7 @@ class Sapi
             header(sprintf('%s: %s', $header, $value));
         }
 
-        foreach($response->cookies as $cookie) {
-            $options = array_merge([
-                //'expires' => 'never',
-                'path' => '/',
-                //'domain' => '',
-                //'secure' => true,
-                'httponly' => true,
-                'samesite' => 'strict',
-            ], $cookie->options);
-
-            setcookie($cookie->name, $cookie->value, $options);
-        }
+        array_map($this->cookieService->setCookie(...), $response->cookies);
 
         echo $response->body;
     }

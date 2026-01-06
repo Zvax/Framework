@@ -10,6 +10,7 @@ readonly class Cookie
     public function __construct(
         public string $name,
         public string $value,
+        public int    $expires,
         public array  $options = [],
     ) {}
 }

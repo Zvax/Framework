@@ -6,14 +6,13 @@ use Zvax\Framework\Http\Response;
 
 readonly class Html extends Response
 {
-    public function __construct(string $content, int $statusCode = 200, array $headers = [])
+    public function __construct(string $content, int $statusCode = 200, array $headers = [], array $cookies = [])
     {
         parent::__construct(
-            statusCode: $statusCode,
-            body: $content,
-            headers: array_merge([
-                'Content-Type' => 'text/html; charset=utf-8',
-            ], $headers),
+            $statusCode,
+            $content,
+            array_merge($headers, ['Content-Type' => 'text/html; charset=utf-8']),
+            $cookies,
         );
     }
 }

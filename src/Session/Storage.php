@@ -4,6 +4,7 @@ namespace Zvax\Framework\Session;
 
 use PDO;
 use Zvax\Framework\Result;
+use Zvax\Framework\Session\Entity as SessionEntity;
 use Zvax\Framework\Session\User\Entity as UserEntity;
 use Zvax\Framework\Session\User\Storage as UserStorage;
 
@@ -14,6 +15,9 @@ readonly class Storage
         private UserStorage $userStorage,
     ) {}
 
+    /**
+     * @return Result<SessionEntity>
+     */
     public function findById(string $sessionId): Result
     {
         $getSessionRow =  $this->pdo->prepare('select * from zvax_sessions where id = :sessionId');
@@ -23,31 +27,36 @@ readonly class Storage
             return Result::failure('Session not found');
         }
 
-        $row = $getSessionRow->fetch();
+        return Result::success($this->fromRow($getSessionRow->fetch()));
+    }
 
-        $userResult = $this->userStorage->fromId($row['user_id']);
-
-        /**
-         * We have a foreign key, so let's assume the result is success actually
-         */
-
-        $user = $userResult->unwrap();
-
-        $session = new Entity(
+    private function fromRow(array $row): Entity
+    {
+        return new Entity(
             $row['id'],
-            $user,
-            new \DateTimeImmutable($row['created']),
-            new \DateTimeImmutable($row['expires']),
+            $this->userStorage->fromId($row['user_id']),
+            new \DateTimeImmutable($row['created_at']),
+            new \DateTimeImmutable($row['expires_at']),
         );
+    }
 
-        return Result::success($session);
+    public function fromId(string $sessionId): ?Entity
+    {
+        $getSessionRow =  $this->pdo->prepare('select * from zvax_sessions where id = :sessionId');
+        $getSessionRow->execute([':sessionId' => $sessionId]);
+
+        if ($getSessionRow->rowCount() === 0) {
+            return null;
+        }
+
+        return $this->fromRow($getSessionRow->fetch());
     }
 
     public function persistNewSession(string $sessionId, UserEntity $user): Entity
     {
         $insertSession = $this->pdo->prepare('
-            insert into zvax_sessions(id, user_id, created, expires)
-            values (:id, :user_id, :created, :expires)
+            insert into zvax_sessions(id, user_id, created_at, expires_at)
+            values (:id, :user_id, :created_at, :expires_at)
         ');
 
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
@@ -56,8 +65,8 @@ readonly class Storage
         $insertSession->execute([
             ':id' => $sessionId,
             ':user_id' => $user->id,
-            ':created' => $now->format('Y-m-d H:i:s'),
-            ':expires' => $expires->format('Y-m-d H:i:s'),
+            ':created_at' => $now->format('Y-m-d H:i:s'),
+            ':expires_at' => $expires->format('Y-m-d H:i:s'),
         ]);
 
         return new Entity(
@@ -70,11 +79,11 @@ readonly class Storage
 
     public function setExpiration(Entity $session, \DateTimeImmutable $expires): void
     {
-        $setExpiration = $this->pdo->prepare('update zvax_sessions set expires = :expires where id = :id');
+        $setExpiration = $this->pdo->prepare('update zvax_sessions set expires_at = :expires_at where id = :id');
 
         $setExpiration->execute([
-            ':id' => $session->id,
-            ':expires' => $expires->format('Y-m-d H:i:s'),
+            ':id'         => $session->id,
+            ':expires_at' => $expires->format('Y-m-d H:i:s'),
         ]);
     }
 }

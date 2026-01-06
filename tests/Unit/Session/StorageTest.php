@@ -7,7 +7,6 @@ use PDOStatement;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Zvax\Framework\Result;
 use Zvax\Framework\Session\Entity;
 use Zvax\Framework\Session\Storage;
 use Zvax\Framework\Session\User\Entity as UserEntity;
@@ -53,14 +52,22 @@ class StorageTest extends TestCase
         $statement->method('fetch')->willReturn([
             'id' => $sessionId,
             'user_id' => $userId,
-            'created' => $created,
-            'expires' => $expires,
+            'created_at' => $created,
+            'expires_at' => $expires,
         ]);
 
-        $this->pdo->method('prepare')->with($this->stringContains('select * from session'))->willReturn($statement);
+        $this->pdo
+            ->method('prepare')
+            ->with($this->stringContains('select * from zvax_sessions where id = :sessionId'))
+            ->willReturn($statement)
+        ;
 
         $user = $this->createMock(UserEntity::class);
-        $this->userStorage->method('fromId')->with($userId)->willReturn(Result::success($user));
+        $this->userStorage
+            ->method('fromId')
+            ->with($userId)
+            ->willReturn($user)
+        ;
 
         $result = $this->storage->findById($sessionId);
 

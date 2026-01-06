@@ -10,8 +10,8 @@ readonly class Response
      */
     public function __construct(
         public int $statusCode,
-        public string $body = '',
-        public array $headers = [],
-        public array $cookies = [],
+        public string $body,
+        public array $headers,
+        public array $cookies,
     ) {}
 }

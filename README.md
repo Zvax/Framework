@@ -7,7 +7,15 @@ bootstrap.php, invoked from a public index.php probably
 ```php
 <?php declare(strict_types=1);
 
-$routes = new \Zvax\Framework\Http\Routes();
+use Userland\LoggedArea;
+use Userland\Login;
+use Userland\SomeSessionCheckMiddleware;
+use Zvax\Framework\App;
+use Zvax\Framework\Http\Request;
+use Zvax\Framework\Http\Routes;
+use Zvax\Framework\Http\Sapi;
+
+$routes = new Routes();
 
 $routes->addRequestMiddlewareGroup(function (Routes $routes) {
     $routes->get('/loggedArea', LoggedArea::class);
@@ -15,9 +23,9 @@ $routes->addRequestMiddlewareGroup(function (Routes $routes) {
 
 $routes->get('/', Login::class);
 
-$app = new \Zvax\Framework\App($routes, $auryn);
+$app = new App($routes, $auryn);
 
-$response = $app->run(\Zvax\Framework\Http\Request::fromGlobals());
+$response = $app->run(Request::fromGlobals());
 
-\Zvax\Framework\Http\Sapi::emit($response);
+new Sapi()->emit($response);
 ```

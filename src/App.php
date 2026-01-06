@@ -19,8 +19,8 @@ readonly class App
 
         return match ($routeInfo[0]) {
             Dispatcher::FOUND => $this->foundRoute($routeInfo, $request),
-            Dispatcher::METHOD_NOT_ALLOWED => new Response(405, 'Method Not Allowed'),
-            Dispatcher::NOT_FOUND => new Response(404, 'Not Found'),
+            Dispatcher::METHOD_NOT_ALLOWED => new Response(405, 'Method Not Allowed', [], []),
+            Dispatcher::NOT_FOUND => new Response(404, 'Not Found', [], []),
         };
     }
 

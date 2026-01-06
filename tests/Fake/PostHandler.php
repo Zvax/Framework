@@ -10,6 +10,6 @@ class PostHandler implements RequestHandler
 {
     public function handle(Request $request): Response
     {
-        return new Response(200);
+        return new Response(200, '', [], []);
     }
 }

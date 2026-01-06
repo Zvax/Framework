@@ -11,16 +11,16 @@ readonly class Storage
         private PDO $pdo,
     ) {}
 
-    public function fromId(int $id): Result
+    public function fromId(int $id): ?Entity
     {
         $getUserRow = $this->pdo->prepare('select * from zvax_users where id=:id');
         $getUserRow->execute([':id' => $id]);
 
         if ($getUserRow->rowCount() === 0) {
-            return Result::failure('User not found');
+            return null;
         }
 
-        return Result::success($this->fromRow($getUserRow->fetch()));
+        return $this->fromRow($getUserRow->fetch());
     }
 
     /**
