@@ -4,6 +4,8 @@ namespace Zvax\Framework\Http;
 
 readonly class Request
 {
+    public readonly array $headers;
+
     /**
      * @param array<string,string> $queryParams
      * @param array<string,string> $headers
@@ -15,11 +17,13 @@ readonly class Request
         public string $method = '',
         public string $uri = '',
         public array $queryParams = [],
-        public array $headers = [],
+        array $headers = [],
         public array $cookies = [],
         public array $attributes = [],
         public array $parsedBody = [],
-    ) {}
+    ) {
+        $this->headers = array_change_key_case($headers);
+    }
 
     public static function fromGlobals(array $server = [], array $headers = []): self
     {
@@ -55,12 +59,12 @@ readonly class Request
 
     public function hasHeader(string $header): bool
     {
-        return array_key_exists($header, $this->headers);
+        return array_key_exists(strtolower($header), $this->headers);
     }
 
     public function getHeader(string $header): string
     {
-        return $this->headers[$header];
+        return $this->headers[strtolower($header)];
     }
 
     public function getAttribute(string $name, mixed $default = null): mixed

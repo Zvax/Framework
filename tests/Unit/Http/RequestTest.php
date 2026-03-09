@@ -21,4 +21,22 @@ class RequestTest extends TestCase
 
         $this->assertCount(2, $request->attributes);
     }
+
+    public function testHasHeaderIsCaseInsensitive(): void
+    {
+        $request = new Request('GET', '/', [], ['Content-Type' => 'application/json'], [], [], []);
+
+        $this->assertTrue($request->hasHeader('Content-Type'));
+        $this->assertTrue($request->hasHeader('content-type'));
+        $this->assertTrue($request->hasHeader('CONTENT-TYPE'));
+    }
+
+    public function testGetHeaderIsCaseInsensitive(): void
+    {
+        $request = new Request('GET', '/', [], ['Content-Type' => 'application/json'], [], [], []);
+
+        $this->assertSame('application/json', $request->getHeader('Content-Type'));
+        $this->assertSame('application/json', $request->getHeader('content-type'));
+        $this->assertSame('application/json', $request->getHeader('CONTENT-TYPE'));
+    }
 }
