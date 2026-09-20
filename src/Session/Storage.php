@@ -35,8 +35,8 @@ readonly class Storage implements SessionStorageInterface
         return new Entity(
             $row['id'],
             $this->userStorage->fromId($row['user_id']),
-            new \DateTimeImmutable($row['created_at']),
-            new \DateTimeImmutable($row['expires_at']),
+            new \DateTimeImmutable($row['created_at'], new \DateTimeZone('UTC')),
+            new \DateTimeImmutable($row['expires_at'], new \DateTimeZone('UTC')),
         );
     }
 
