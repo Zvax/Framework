@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Zvax\Framework\Tests\Unit\Session;
+namespace Zvax\Framework\Tests\Session;
 
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -8,9 +8,9 @@ use PHPUnit\Framework\TestCase;
 use Zvax\Framework\Result;
 use Zvax\Framework\Session\Entity as SessionEntity;
 use Zvax\Framework\Session\Service;
-use Zvax\Framework\Session\Storage as SessionStorage;
+use Zvax\Framework\Session\SessionStorageInterface as SessionStorage;
 use Zvax\Framework\Session\User\Entity as UserEntity;
-use Zvax\Framework\Session\User\Storage as UserStorage;
+use Zvax\Framework\Session\User\UserStorageInterface as UserStorage;
 
 #[CoversClass(Service::class)]
 class ServiceTest extends TestCase
@@ -85,6 +85,51 @@ class ServiceTest extends TestCase
         $this->assertTrue($result->isSuccess);
         $this->assertCount(0, $result->errors);
         $this->assertInstanceOf(SessionEntity::class, $result->unwrap());
+    }
+
+    public function testValidateMissingSession(): void
+    {
+        $failure = Result::failure('Session not found');
+        $this->sessionStorage->expects($this->once())->method('findById')->with('missing')->willReturn($failure);
+        $this->sessionStorage->expects($this->never())->method('setExpiration');
+
+        $this->assertSame($failure, $this->service->validate('missing'));
+    }
+
+    public function testValidateExpiredSessionDoesNotRenewIt(): void
+    {
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $session = new SessionEntity('expired', $this->createMock(UserEntity::class), $now->modify('-2 hours'), $now);
+        $this->sessionStorage->expects($this->once())->method('findById')->with('expired')->willReturn(Result::success($session));
+        $this->sessionStorage->expects($this->never())->method('setExpiration');
+
+        $result = $this->service->validate('expired');
+
+        $this->assertFalse($result->isSuccess);
+        $this->assertSame(['Session expired'], $result->errors);
+    }
+
+    public function testValidateReturnsRenewedSession(): void
+    {
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $session = new SessionEntity('valid', $this->createMock(UserEntity::class), $now, $now->modify('+1 hour'));
+        $persistedExpiration = null;
+        $this->sessionStorage->expects($this->once())->method('findById')->with('valid')->willReturn(Result::success($session));
+        $this->sessionStorage->expects($this->once())->method('setExpiration')
+            ->with($this->identicalTo($session), $this->isInstanceOf(\DateTimeImmutable::class))
+            ->willReturnCallback(function (SessionEntity $storedSession, \DateTimeImmutable $expires) use (&$persistedExpiration): void {
+                $persistedExpiration = $expires;
+            });
+
+        $result = $this->service->validate('valid');
+
+        $this->assertTrue($result->isSuccess);
+        $updated = $result->unwrap();
+        $this->assertSame($persistedExpiration, $updated->expires);
+        $this->assertGreaterThan($session->expires, $updated->expires);
+        $this->assertSame($session->id, $updated->id);
+        $this->assertSame($session->user, $updated->user);
+        $this->assertSame($session->created, $updated->created);
     }
 
     public function testCloseSession(): void

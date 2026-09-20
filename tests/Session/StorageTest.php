@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Zvax\Framework\Tests\Unit\Session;
+namespace Zvax\Framework\Tests\Session;
 
 use PDO;
 use PDOStatement;
@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 use Zvax\Framework\Session\Entity;
 use Zvax\Framework\Session\Storage;
 use Zvax\Framework\Session\User\Entity as UserEntity;
-use Zvax\Framework\Session\User\Storage as UserStorage;
+use Zvax\Framework\Session\User\UserStorageInterface as UserStorage;
 
 #[CoversClass(Storage::class)]
 class StorageTest extends TestCase
@@ -69,7 +69,13 @@ class StorageTest extends TestCase
             ->willReturn($user)
         ;
 
-        $result = $this->storage->findById($sessionId);
+        $originalTimezone = date_default_timezone_get();
+        date_default_timezone_set('America/Toronto');
+        try {
+            $result = $this->storage->findById($sessionId);
+        } finally {
+            date_default_timezone_set($originalTimezone);
+        }
 
         $this->assertTrue($result->isSuccess);
         /** @var Entity $session */
@@ -78,6 +84,43 @@ class StorageTest extends TestCase
         $this->assertSame($user, $session->user);
         $this->assertSame($created, $session->created->format('Y-m-d H:i:s'));
         $this->assertSame($expires, $session->expires->format('Y-m-d H:i:s'));
+        $this->assertSame('UTC', $session->created->getTimezone()->getName());
+        $this->assertSame('UTC', $session->expires->getTimezone()->getName());
+    }
+
+    public function testFromIdThrowsWhenNotFound(): void
+    {
+        $statement = $this->createMock(PDOStatement::class);
+        $statement->method('rowCount')->willReturn(0);
+
+        $this->pdo->method('prepare')->willReturn($statement);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Session not found');
+
+        $this->storage->fromId('missing');
+    }
+
+    public function testFromIdReturnsEntityWhenFound(): void
+    {
+        $statement = $this->createMock(PDOStatement::class);
+        $statement->method('rowCount')->willReturn(1);
+        $statement->method('fetch')->willReturn([
+            'id' => 'session-123',
+            'user_id' => 456,
+            'created_at' => '2025-01-01 10:00:00',
+            'expires_at' => '2025-01-01 12:00:00',
+        ]);
+
+        $this->pdo->method('prepare')->willReturn($statement);
+
+        $user = $this->createMock(UserEntity::class);
+        $this->userStorage->method('fromId')->with(456)->willReturn($user);
+
+        $session = $this->storage->fromId('session-123');
+
+        $this->assertSame('session-123', $session->id);
+        $this->assertSame($user, $session->user);
     }
 
     public function testPersistNewSession(): void

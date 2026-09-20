@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Zvax\Framework\Tests\Unit;
+namespace Zvax\Framework\Tests;
 
 use Auryn\Injector;
 use PHPUnit\Framework\Attributes\CoversClass;
