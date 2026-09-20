@@ -42,9 +42,14 @@ readonly class Service
             return $sessionResult;
         }
 
-        $this->bump($sessionResult->unwrap());
+        $session = $sessionResult->unwrap();
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
 
-        return $sessionResult;
+        if ($session->expires <= $now) {
+            return Result::failure('Session expired');
+        }
+
+        return Result::success($this->bump($session));
     }
 
     public function bump(Entity $session, string $timeInterval = 'PT2H'): Entity
