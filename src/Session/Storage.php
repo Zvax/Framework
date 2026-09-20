@@ -6,13 +6,13 @@ use PDO;
 use Zvax\Framework\Result;
 use Zvax\Framework\Session\Entity as SessionEntity;
 use Zvax\Framework\Session\User\Entity as UserEntity;
-use Zvax\Framework\Session\User\Storage as UserStorage;
+use Zvax\Framework\Session\User\UserStorageInterface;
 
-readonly class Storage
+readonly class Storage implements SessionStorageInterface
 {
     public function __construct(
-        private PDO         $pdo,
-        private UserStorage $userStorage,
+        private PDO                  $pdo,
+        private UserStorageInterface $userStorage,
     ) {}
 
     /**
@@ -40,13 +40,13 @@ readonly class Storage
         );
     }
 
-    public function fromId(string $sessionId): ?Entity
+    public function fromId(string $sessionId): Entity
     {
         $getSessionRow =  $this->pdo->prepare('select * from zvax_sessions where id = :sessionId');
         $getSessionRow->execute([':sessionId' => $sessionId]);
 
         if ($getSessionRow->rowCount() === 0) {
-            return null;
+            throw new \RuntimeException('Session not found');
         }
 
         return $this->fromRow($getSessionRow->fetch());

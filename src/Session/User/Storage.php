@@ -5,7 +5,7 @@ namespace Zvax\Framework\Session\User;
 use PDO;
 use Zvax\Framework\Result;
 
-readonly class Storage
+readonly class Storage implements UserStorageInterface
 {
     public function __construct(
         private PDO $pdo,

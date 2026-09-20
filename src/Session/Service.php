@@ -3,13 +3,13 @@
 namespace Zvax\Framework\Session;
 
 use Zvax\Framework\Result;
-use Zvax\Framework\Session\User\Storage as UserStorage;
+use Zvax\Framework\Session\User\UserStorageInterface;
 
 readonly class Service
 {
     public function __construct(
-        private Storage     $sessionStorage,
-        private UserStorage $userStorage,
+        private SessionStorageInterface $sessionStorage,
+        private UserStorageInterface    $userStorage,
     ) {}
 
     /**
